@@ -5,6 +5,12 @@
 #include <string>
 
 using namespace std;
+struct nodo{
+  string info;
+  struct nodo *nexo;
+};
+typedef struct nodo *Lista;
+
 void ingresoTransiciones(map<tuple<string,char,char>,tuple<string, string>> &M);
 void quitaEspacio(string &palabra);
 string aMinuscula(string str, int n);
@@ -16,23 +22,24 @@ bool conseguirDatos(string qi, char a, char R, string &qj, string &AR, map<tuple
 void ManejoError(int opt);
 void mensajeAyuda();
 void imprimirTransiciones(map<tuple<string,char,char>,tuple<string, string>> &M);
+void imprimirDI(string p, string s, string q, int i);
+void insertarInfo(Lista &eFinales, string estadoF);
+bool esAlfanumerico(string s);
 
-
-
-void inputs(string &estado,string &efinal,string &einicial);
+void inputs(string &estado,Lista &eFinales,string &einicial);
 bool validarVacio(string palabra);
 char avanzarStack(string &stack, string AR);
 char avanzaPalabra(string palabra, int &i);
 
 int main(){
-    string einicial, efinal, estado, pEntrada;
+    string einicial, estado, pEntrada;
+    Lista eFinales=NULL;
     map<tuple<string,char,char>,tuple<string, string>> T;
     cout << "====================================\n";
     cout << "        AUTOMATA PUSH DOWN          \n";
 
     ingresoTransiciones(T);
-    inputs(estado, efinal, einicial);
-    string eActual = einicial;
+    inputs(estado, eFinales, einicial);
     string qi, qj, AR;      //AR= lo que se le añadira al stack   qi= estado actual    qj= estado al que se ira
     while(true){
 
@@ -58,12 +65,21 @@ int main(){
       string stack = "R";
       qi=einicial;
       char S = stack[0];
+      imprimirDI(pEntrada, stack, qi, i);
+
       while(conseguirDatos(qi,a,S,qj,AR, T)){
           qi=qj;
           a=avanzaPalabra(pEntrada,i);
           S=avanzarStack(stack, AR);
+          cout << "├" ;
+          imprimirDI(pEntrada, stack, qi, i);
       }
-      if(qi==efinal){
+      cout<<endl;
+      Lista p = eFinales;
+      while(p != NULL && (p->info != qi)){
+         p = p->nexo;
+      }
+      if(p != NULL){
         cout<<"Acepta la palabra por estado final"<<endl;
       }else if(stack.length()==0){
         cout<<"Acepta la palabra por stack vacio"<<endl;
@@ -79,7 +95,7 @@ int main(){
 
 
 
-void inputs(string &estado,string &efinal,string &einicial){
+void inputs(string &estado, Lista &eFinales,string &einicial){
 
     cout<<"Ingrese el estado inicial: ";
     getline(cin,einicial);
@@ -90,11 +106,24 @@ void inputs(string &estado,string &efinal,string &einicial){
     getline(cin, estado);
     quitaEspacio(estado);
     cout<<endl;
-
+    string temp;
     if(estado=="2"){
-        cout<<"Ingrese estado final: ";
-        getline(cin,efinal);
-        quitaEspacio(efinal);
+        while(true){
+          cout << "Ingrese un estado final: "<< endl;
+          getline(cin, temp);
+          quitaEspacio(temp);
+          if(temp.length() == 0) {
+            ManejoError(1);
+            continue;
+          }
+          if(temp == "siguiente") break;
+          if(esAlfanumerico(temp)){
+            insertarInfo(eFinales, temp);
+            cout << "ingreso Exitoso!" << endl;
+          } else {
+            ManejoError(4);
+          }
+        }
         cout<<endl;
     }
 
@@ -107,7 +136,14 @@ void inputs(string &estado,string &efinal,string &einicial){
         cout<<"El APD acepta por stack vacio por lo que no tiene estado final."<<endl;
     }
     else{
-        cout<<"El estado final del APD es: "<<efinal<<endl;;
+        Lista p = eFinales;
+        cout<<"Los estados finales del APD son: " << endl;
+        while(p != NULL){
+          cout << p->info << " ";
+          p = p->nexo;
+        }
+        cout << endl;
+        
     }
     
 
@@ -223,6 +259,13 @@ bool esAlfanumerico(char c){
   if(64==i) return true; //es @ (se utiliza como palabra vacia)
   return false;
 }
+bool esAlfanumerico(string s){
+  int n = s.length();
+  for(int i=0; i<n; i++)
+    if(!esAlfanumerico(s[i])) return false;
+  return true;
+}
+
 bool validaPalabra(string str, int &i, int n, string &output){
   if(i>=n){
     ManejoError(2);
@@ -351,4 +394,24 @@ char avanzaPalabra(string palabra, int &i){
     }else{
         return palabra[i];
     }
+}
+
+void imprimirDI(string p, string s, string q, int i){
+  int n= p.length(), j= n-i;
+  string pal, stack;
+  
+  if(i >= n) pal = "@";
+  else pal = p.substr(i,j);
+
+  if (s == "") stack = "@";
+  else stack = s;
+
+  cout << "(" << q << ", " << pal << ", " << stack << ")";
+}
+void insertarInfo(Lista &eFinales, string estadoF){
+  Lista q;
+  q = new(struct nodo);
+  q->info = estadoF;
+  q->nexo = eFinales;
+  eFinales = q; 
 }
